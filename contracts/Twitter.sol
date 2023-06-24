@@ -18,7 +18,7 @@ contract TwitterContract{
     }
 
     mapping(uint=>Twitter) public tweets;
-    mapping(address=>int[])public tweetsof; 
+    mapping(address=>uint[])public tweetsOf; 
     mapping(address=>message[]) public conversation;
     mapping(address=>mapping(address=>bool))public operation;
     mapping(address=>address[]) public following;
@@ -27,11 +27,14 @@ contract TwitterContract{
     uint nextmessageId;
 
     function _tweet(address _from,string memory _content) internal {
+        require(_from==msg.sender || operation[_from][msg.sender],"You don't have access");
         tweets[nextId]=Twitter(nextId,_from,_content,block.timestamp);
+        tweetsOf[_from].push(nextId);
         nextId++;
     }
 
     function _sendmessage(address _from,address _to,string memory content) internal{
+        require(_from==msg.sender || operation[_from][msg.sender],"You don't have access");
         conversation[_from].push(message(nextmessageId,content,_from,_to,block.timestamp));
         nextmessageId++;
 
@@ -72,6 +75,19 @@ contract TwitterContract{
         uint j;
         for(uint i=nextId-count;i<nextId;i++){
             Twitter storage _structure = tweets[i];
+            _tweets[j]=Twitter(_structure.id,_structure.author,_structure.content,_structure.createdAt);
+            j=j+1;
+        }
+        return _tweets;
+    }
+
+    function getLatestofUser(address _user,uint count) public view returns(Twitter[] memory){
+        Twitter[] memory _tweets = new Twitter[](count);
+        uint[] memory ids = tweetsOf[_user];
+        require(count>0&&count<=ids.length,"Count is not defined");
+        uint j;
+         for(uint i=ids.length-count;i<ids.length;i++){
+            Twitter storage _structure = tweets[ids[i]];
             _tweets[j]=Twitter(_structure.id,_structure.author,_structure.content,_structure.createdAt);
             j=j+1;
         }
